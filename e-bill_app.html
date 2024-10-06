@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Distribution System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        label, input {
+            display: block;
+            margin: 10px 0;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Electricity Bill Distribution System</h2>
+
+    <label for="totalBill">Total Electricity Bill (INR):</label>
+    <input type="number" id="totalBill" placeholder="Enter total bill amount" min="0">
+
+    <h3>Add Tenants and Units Used</h3>
+    
+    <div id="tenantContainer">
+        <div class="tenant">
+            <label>Tenant Name:</label>
+            <input type="text" class="tenantName" placeholder="Enter tenant name">
+            <label>Units Used:</label>
+            <input type="number" class="unitsUsed" placeholder="Enter units used" min="0">
+        </div>
+    </div>
+
+    <button onclick="addTenant()">Add Another Tenant</button>
+    <button onclick="calculateBill()">Calculate Bill</button>
+
+    <div class="result" id="resultContainer"></div>
+
+    <script>
+        function addTenant() {
+            const tenantContainer = document.getElementById("tenantContainer");
+            const tenantDiv = document.createElement("div");
+            tenantDiv.classList.add("tenant");
+
+            tenantDiv.innerHTML = `
+                <label>Tenant Name:</label>
+                <input type="text" class="tenantName" placeholder="Enter tenant name">
+                <label>Units Used:</label>
+                <input type="number" class="unitsUsed" placeholder="Enter units used" min="0">
+            `;
+
+            tenantContainer.appendChild(tenantDiv);
+        }
+
+        function calculateBill() {
+            const totalBill = parseFloat(document.getElementById("totalBill").value);
+            const tenantNames = document.querySelectorAll(".tenantName");
+            const unitsUsedInputs = document.querySelectorAll(".unitsUsed");
+
+            let totalUnits = 0;
+            const tenants = [];
+
+            for (let i = 0; i < tenantNames.length; i++) {
+                const tenantName = tenantNames[i].value;
+                const unitsUsed = parseFloat(unitsUsedInputs[i].value);
+
+                if (!tenantName || isNaN(unitsUsed)) {
+                    alert("Please fill all the fields correctly.");
+                    return;
+                }
+
+                tenants.push({ name: tenantName, units: unitsUsed });
+                totalUnits += unitsUsed;
+            }
+
+            if (totalUnits === 0 || isNaN(totalBill) || totalBill <= 0) {
+                alert("Please enter valid total units and bill.");
+                return;
+            }
+
+            const resultContainer = document.getElementById("resultContainer");
+            resultContainer.innerHTML = "<h3>Bill Distribution</h3>";
+
+            tenants.forEach(tenant => {
+                const amountOwed = (tenant.units / totalUnits) * totalBill;
+                resultContainer.innerHTML += `<p>${tenant.name} owes: INR ${amountOwed.toFixed(2)}</p>`;
+            });
+        }
+    </script>
+
+</body>
+</html>
