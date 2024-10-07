@@ -8,6 +8,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f4f9;
+            color: #333;
             margin: 0;
             padding: 0;
         }
@@ -15,7 +16,7 @@
             max-width: 900px;
             margin: 50px auto;
             padding: 20px;
-            background-color: white;
+            background-color: #fff;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
@@ -25,7 +26,7 @@
         }
         label {
             font-weight: bold;
-            color: #555;
+            color: #666;
         }
         input, button {
             width: 100%;
@@ -34,13 +35,14 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 1rem;
-            box-sizing: border-box;
+            background-color: #f9f9f9;
+            color: #333;
         }
         button {
             background-color: #4CAF50;
-            color: white;
             cursor: pointer;
             font-weight: bold;
+            color: white;
         }
         button:hover {
             background-color: #45a049;
@@ -50,16 +52,23 @@
             padding: 15px;
             margin-top: 20px;
             border-left: 4px solid #4CAF50;
+            color: #333;
         }
         .result p {
             font-size: 1.1rem;
-            color: #333;
         }
         .explanation {
-            color: #333;
             font-size: 0.95rem;
         }
         .tenant {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f0f5;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .tenant:not(:last-child) {
             margin-bottom: 20px;
         }
         .add-tenant-btn {
@@ -69,6 +78,12 @@
         }
         .add-tenant-btn:hover {
             background-color: #1e87e5;
+        }
+        .warning {
+            color: #ff9800;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none; /* Initially hidden */
         }
     </style>
 </head>
@@ -91,6 +106,7 @@
                 <input type="text" class="tenantName" placeholder="Enter tenant name">
                 <label>Units Used:</label>
                 <input type="number" class="unitsUsed" placeholder="Enter units used" min="0">
+                <div class="warning">Incomplete data, this tenant will be skipped.</div>
             </div>
         </div>
 
@@ -99,9 +115,12 @@
 
         <div class="result" id="resultContainer"></div>
         <div class="explanation" id="explanationContainer"></div>
+
     </div>
 
     <script>
+        let tenantData = [];
+
         function addTenant() {
             const tenantContainer = document.getElementById("tenantContainer");
             const tenantDiv = document.createElement("div");
@@ -112,6 +131,7 @@
                 <input type="text" class="tenantName" placeholder="Enter tenant name">
                 <label>Units Used:</label>
                 <input type="number" class="unitsUsed" placeholder="Enter units used" min="0">
+                <div class="warning">Incomplete data, this tenant will be skipped.</div>
             `;
 
             tenantContainer.appendChild(tenantDiv);
@@ -122,25 +142,28 @@
             const bescomUnits = parseFloat(document.getElementById("bescomUnits").value);
             const tenantNames = document.querySelectorAll(".tenantName");
             const unitsUsedInputs = document.querySelectorAll(".unitsUsed");
+            const warnings = document.querySelectorAll(".warning");
 
             let totalTenantUnits = 0;
-            const tenants = [];
+            tenantData = []; // Reset tenant data
 
-            // Calculate total tenant used units and store tenant details
+            const tenants = [];
             for (let i = 0; i < tenantNames.length; i++) {
                 const tenantName = tenantNames[i].value;
                 const unitsUsed = parseFloat(unitsUsedInputs[i].value);
 
-                if (!tenantName || isNaN(unitsUsed)) {
-                    alert("Please fill all the fields correctly.");
-                    return;
+                // Show a warning if the tenant has incomplete data
+                if (!tenantName.trim() || isNaN(unitsUsed) || unitsUsed <= 0) {
+                    warnings[i].style.display = 'block';
+                    continue; // Skip this tenant if details are missing or incomplete
                 }
 
+                warnings[i].style.display = 'none'; // Hide the warning if data is valid
                 tenants.push({ name: tenantName, units: unitsUsed });
                 totalTenantUnits += unitsUsed;
             }
 
-            if (totalTenantUnits === 0 || isNaN(totalBill) || totalBill <= 0 || isNaN(bescomUnits) || bescomUnits <= 0) {
+            if (tenants.length === 0 || totalTenantUnits === 0 || isNaN(totalBill) || totalBill <= 0 || isNaN(bescomUnits) || bescomUnits <= 0) {
                 alert("Please enter valid inputs.");
                 return;
             }
@@ -149,29 +172,23 @@
             const explanationContainer = document.getElementById("explanationContainer");
             resultContainer.innerHTML = "<h3>Bill Distribution</h3>";
 
-            // Start the explanation string
             let explanationText = `<h3>Calculation Explanation</h3>`;
             explanationText += `Total tenant-used units: ${totalTenantUnits} units<br>`;
             explanationText += `BESCOM total units: ${bescomUnits} units<br>`;
             explanationText += `Total bill: INR ${totalBill.toFixed(2)}<br><br>`;
             explanationText += `Each tenant's share is calculated based on their proportionate units compared to BESCOM units, and the corresponding bill is calculated based on this proportion.<br><br>`;
 
-            tenants.forEach(tenant => {
-                // Calculate proportionate units for each tenant based on BESCOM units
+            tenants.forEach((tenant, index) => {
                 const proportionateUnits = (tenant.units / totalTenantUnits) * bescomUnits;
-                // Calculate the amount owed by each tenant
                 const amountOwed = (proportionateUnits / bescomUnits) * totalBill;
 
-                // Add result to the result container
                 resultContainer.innerHTML += `<p>${tenant.name} owes: INR ${amountOwed.toFixed(2)}</p>`;
 
-                // Add explanation of the calculation for each tenant
                 explanationText += `<strong>${tenant.name}</strong> used ${tenant.units} units.<br>`;
                 explanationText += `Proportionate units based on BESCOM units: ${proportionateUnits.toFixed(2)} units.<br>`;
                 explanationText += `Amount owed: INR ${amountOwed.toFixed(2)}<br><br>`;
             });
 
-            // Display explanation
             explanationContainer.innerHTML = explanationText;
         }
     </script>
