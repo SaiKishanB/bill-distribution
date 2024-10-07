@@ -6,40 +6,100 @@
     <title>Bill Distribution System</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
             padding: 20px;
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
         }
-        label, input {
-            display: block;
-            margin: 10px 0;
+        h2 {
+            text-align: center;
+            color: #333;
         }
-        .result {
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 16px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result, .explanation {
+            background-color: #f9f9f9;
+            padding: 15px;
             margin-top: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        .result p {
+            font-size: 1.1rem;
+            color: #333;
+        }
+        .explanation {
+            color: #333;
+            font-size: 0.95rem;
+        }
+        .tenant {
+            margin-bottom: 20px;
+        }
+        .add-tenant-btn {
+            background-color: #2196F3;
+            color: white;
+            font-weight: bold;
+        }
+        .add-tenant-btn:hover {
+            background-color: #1e87e5;
         }
     </style>
 </head>
 <body>
 
-    <h2>Electricity Bill Distribution System</h2>
+    <div class="container">
+        <h2>Electricity Bill Distribution System</h2>
 
-    <label for="totalBill">Total Electricity Bill (INR):</label>
-    <input type="number" id="totalBill" placeholder="Enter total bill amount" min="0">
+        <label for="totalBill">Total Electricity Bill (INR):</label>
+        <input type="number" id="totalBill" placeholder="Enter total bill amount" min="0">
 
-    <h3>Add Tenants and Units Used</h3>
-    
-    <div id="tenantContainer">
-        <div class="tenant">
-            <label>Tenant Name:</label>
-            <input type="text" class="tenantName" placeholder="Enter tenant name">
-            <label>Units Used:</label>
-            <input type="number" class="unitsUsed" placeholder="Enter units used" min="0">
+        <label for="bescomUnits">BESCOM Total Units:</label>
+        <input type="number" id="bescomUnits" placeholder="Enter total BESCOM units" min="0">
+
+        <h3>Add Tenants and Units Used</h3>
+        
+        <div id="tenantContainer">
+            <div class="tenant">
+                <label>Tenant Name:</label>
+                <input type="text" class="tenantName" placeholder="Enter tenant name">
+                <label>Units Used:</label>
+                <input type="number" class="unitsUsed" placeholder="Enter units used" min="0">
+            </div>
         </div>
+
+        <button class="add-tenant-btn" onclick="addTenant()">Add Another Tenant</button>
+        <button onclick="calculateBill()">Calculate Bill</button>
+
+        <div class="result" id="resultContainer"></div>
+        <div class="explanation" id="explanationContainer"></div>
     </div>
-
-    <button onclick="addTenant()">Add Another Tenant</button>
-    <button onclick="calculateBill()">Calculate Bill</button>
-
-    <div class="result" id="resultContainer"></div>
 
     <script>
         function addTenant() {
@@ -59,12 +119,14 @@
 
         function calculateBill() {
             const totalBill = parseFloat(document.getElementById("totalBill").value);
+            const bescomUnits = parseFloat(document.getElementById("bescomUnits").value);
             const tenantNames = document.querySelectorAll(".tenantName");
             const unitsUsedInputs = document.querySelectorAll(".unitsUsed");
 
-            let totalUnits = 0;
+            let totalTenantUnits = 0;
             const tenants = [];
 
+            // Calculate total tenant used units and store tenant details
             for (let i = 0; i < tenantNames.length; i++) {
                 const tenantName = tenantNames[i].value;
                 const unitsUsed = parseFloat(unitsUsedInputs[i].value);
@@ -75,21 +137,42 @@
                 }
 
                 tenants.push({ name: tenantName, units: unitsUsed });
-                totalUnits += unitsUsed;
+                totalTenantUnits += unitsUsed;
             }
 
-            if (totalUnits === 0 || isNaN(totalBill) || totalBill <= 0) {
-                alert("Please enter valid total units and bill.");
+            if (totalTenantUnits === 0 || isNaN(totalBill) || totalBill <= 0 || isNaN(bescomUnits) || bescomUnits <= 0) {
+                alert("Please enter valid inputs.");
                 return;
             }
 
             const resultContainer = document.getElementById("resultContainer");
+            const explanationContainer = document.getElementById("explanationContainer");
             resultContainer.innerHTML = "<h3>Bill Distribution</h3>";
 
+            // Start the explanation string
+            let explanationText = `<h3>Calculation Explanation</h3>`;
+            explanationText += `Total tenant-used units: ${totalTenantUnits} units<br>`;
+            explanationText += `BESCOM total units: ${bescomUnits} units<br>`;
+            explanationText += `Total bill: INR ${totalBill.toFixed(2)}<br><br>`;
+            explanationText += `Each tenant's share is calculated based on their proportionate units compared to BESCOM units, and the corresponding bill is calculated based on this proportion.<br><br>`;
+
             tenants.forEach(tenant => {
-                const amountOwed = (tenant.units / totalUnits) * totalBill;
+                // Calculate proportionate units for each tenant based on BESCOM units
+                const proportionateUnits = (tenant.units / totalTenantUnits) * bescomUnits;
+                // Calculate the amount owed by each tenant
+                const amountOwed = (proportionateUnits / bescomUnits) * totalBill;
+
+                // Add result to the result container
                 resultContainer.innerHTML += `<p>${tenant.name} owes: INR ${amountOwed.toFixed(2)}</p>`;
+
+                // Add explanation of the calculation for each tenant
+                explanationText += `<strong>${tenant.name}</strong> used ${tenant.units} units.<br>`;
+                explanationText += `Proportionate units based on BESCOM units: ${proportionateUnits.toFixed(2)} units.<br>`;
+                explanationText += `Amount owed: INR ${amountOwed.toFixed(2)}<br><br>`;
             });
+
+            // Display explanation
+            explanationContainer.innerHTML = explanationText;
         }
     </script>
 
